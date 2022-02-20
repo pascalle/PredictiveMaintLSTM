@@ -1,0 +1,3 @@
+[submodule "PumpSensors"]
+	path = PumpSensors
+	url = https://github.com/JanderHungrige/PumpSensor.git
