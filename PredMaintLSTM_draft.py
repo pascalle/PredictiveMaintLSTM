@@ -17,7 +17,7 @@ from sklearn.preprocessing import OneHotEncoder
 #import matplotlib.pyplot as plt
 #from sklearn import preprocessing
 # adding Folder_2 to the system path
-sys.path.insert(0, 'C:/Users/mw/OneDrive/Desktop/Predictive Maintenance with LSTM Project/PumpSensor')
+sys.path.insert(0, 'C:/Users/mw/OneDrive/Desktop/Predictive Maintenance with LSTM Project/PumpSensors')
 import Sensor_learning as psl
 import Sensor_analysis as psa
 
@@ -49,6 +49,26 @@ data_train, sensorname_train = read_data(dp_train)
 data_test, sensorname_test = read_data(dp_test)
 #print(sensorname_train)
 #print(sensorname_test)
+print(data_train.shape)
+print(data_train.keys())
+print(data_train.head())
+print(data_train.head(1))
+print(data_train[["id","t","sensor_1", "machine_status"]])
+
+xdt = data_train[["id","t","sensor_1", "machine_status"]]
+print(xdt[xdt["id"]==1]) 
+xdt = xdt[xdt["id"]==1]
+print(xdt.head(1))
+
+
+
+xdt.plot(x="t", y = "machine_status")
+
+
+sensor_1 = data_train[["id","t","sensor_1"]]
+sensor_1 = sensor_1[(sensor_1["id"] == 1)] # & (sensor_1["t"]  <= 20)] #sensor_1[sensor_1["id"] <= 5]
+print(sensor_1)
+sensor_1.plot(x ='t', y='sensor_1', c= "id", cmap= "viridis", kind = 'scatter')	#c= "t"
 
 
 #Discovering that there are 3 variables for machine status: [normal (9631), recovering(8000), broken(3000)]
@@ -132,7 +152,7 @@ def model_setup_seq(in_shape):
     from tensorflow.keras.layers import Dense
     
     model = Sequential()
-    model.add(LSTM(32,activation='relu', input_shape=(in_shape[0],in_shape[1]), 
+    model.add(LSTM(32,activation='relu', input_shape=(None,in_shape[1]), 
                    return_sequences=True)  )#,
                    # kernel_regularizer=tf.keras.regularizers.L1L2(0.01,0.01)))
     #model.add(Dropout(0.3))
@@ -149,8 +169,8 @@ def model_setup_Fapi(in_shape):
     from tensorflow.keras.layers import Dropout
     from tensorflow.keras.layers import Dense
     
-    inputs= tf.keras.Input(shape=(in_shape[0],in_shape[1]))
-    x=LSTM(42,activation='relu', input_shape=(in_shape[0],in_shape[1]),return_sequences=True)(inputs)
+    inputs= tf.keras.Input(shape=(None,in_shape[1]))
+    x=LSTM(42,activation='relu', input_shape=(None,in_shape[1]),return_sequences=True)(inputs)
     x=LSTM(42,activation='relu')(x)
     out_signal=Dense(1, name='signal_out')(x)
     out_class=Dense(3,activation='softmax', name='class_out')(x)
@@ -170,20 +190,20 @@ def model_setup_Fapi(in_shape):
 
 Train=True
 inputshape_X=(train_X.shape)
-#print(inputshape_X)
+print(inputshape_X)
 
 '''Getting error here but I can't figure it out
-#Getting error with the model.fit 
+#Need to update the input to be the right size
 #ValueError: Input 0 is incompatible with layer model_4: expected shape=(None, 12378, 21), found shape=(None, 21)
 #I thought I fixed the shape to work with the new data (shape=(in_shape[0],in_shape[1]) instead of [1] and [2]) but it's not working'
 '''
 
 if Train==True:
-    model=model_setup_seq(inputshape_X)
-    history = model.fit(train_X, train_Y, epochs=80, batch_size=32, validation_data=(val_X, val_Y), shuffle=False)
+    #model=model_setup_seq(inputshape_X)
+    #history = model.fit(train_X, train_Y, epochs=80, batch_size=32, validation_data=(val_X, val_Y), shuffle=False)
 
-    #model=model_setup_Fapi(inputshape_X)
-    #history = model.fit(train_X, [train_Y, train_Y_Hot], epochs=20, batch_size=32, validation_data=(val_X, [val_Y,val_Y_Hot]), shuffle=False)
+    model=model_setup_Fapi(inputshape_X)
+    history = model.fit(train_X, [train_Y, train_Y_Hot], epochs=20, batch_size=32, validation_data=(val_X, [val_Y,val_Y_Hot]), shuffle=False)
     psl.plot_training([history.history['class_out_loss'],history.history['val_class_out_loss']],
                   what='loss',
                   saving=True,
