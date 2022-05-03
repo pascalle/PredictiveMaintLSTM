@@ -185,6 +185,11 @@ def reshape_for_Lstm(data, timesteps=1):
 
 
 # TRAIN
+'''Error with shapes from the second layer to the output layer, losing a dimension
+when I use x = LSTM(units, activation='relu')(x)
+so I added input_shape=(in_shape[1], in_shape[2]), return_sequences=True
+And now I have a lot of NAN values in the output. So not sure if I fixed the error or caused more
+issues'''
 def model_setup_Fapi(in_shape):
     from tensorflow.keras.layers import LSTM
     from tensorflow.keras.layers import Dropout
@@ -193,6 +198,8 @@ def model_setup_Fapi(in_shape):
 
     inputs = tf.keras.Input(shape=(in_shape[1], in_shape[2]))
     x = LSTM(units, activation='relu', input_shape=(in_shape[1], in_shape[2]), return_sequences=True)(inputs)
+    #Second layer (not including input layer)
+    # x = LSTM(units, activation='relu')(x)
     x = LSTM(units, activation='relu', input_shape=(in_shape[1], in_shape[2]), return_sequences=True)(x)
     out_signal = Dense(1, name='signal_out')(x)
     out_class = Dense(4, activation='softmax', name='class_out')(x)  # Use softmax for classification problems
@@ -269,8 +276,7 @@ if __name__ == '__main__':
     # Pad each timeseries wiht 0's so they all have the same length
     # Using split segment to ensure training and validation sets are split so they
     pad_train, split_segment = pad0(train_series, "id(t-1)")
-    # print(pad_train.columns)
-    # print(split_segment)
+
 
     # DROP2
     # Need to remove certain columns from the time series created data and split the x and y variables
@@ -305,25 +311,12 @@ if __name__ == '__main__':
     train_X = reshape_for_Lstm(x_train, timesteps)
     val_X = reshape_for_Lstm(x_val, timesteps)
 
-    # Don't reshape the Y values
-    #samples=int(np.floor(y_train.shape[0]/timesteps)) #batch
-    #y_train=y_train.flatten()
-    #y_train=y_train.reshape((samples,1))
-    #samples=int(np.floor(y_val.shape[0]/timesteps)) #batch
-    #y_val=y_val.reshape((samples,1))
-    #samples=int(np.floor(y_train_hot.shape[0]/timesteps)) #batch
-    #y_train_hot=y_train_hot.reshape((samples,1))
-    #samples=int(np.floor(y_val_hot.shape[0]/timesteps)) #batch
-    #y_val_hot=y_val_hot.reshape((samples,1))
-
     y_train = reshape_for_Lstm(y_train, timesteps)
     y_val = reshape_for_Lstm(y_val, timesteps)
-
     y_train_hot = reshape_for_Lstm(y_train_hot, timesteps)
     y_val_hot = reshape_for_Lstm(y_val_hot, timesteps)
-    '''When timesteps = split_segment, need to reshape the y as well
-    Also should make this a part of a function to automate the choice of timesteps'''
-
+    
+    
     # TRAIN
     inputshape_X = (train_X.shape)
     batch_X = train_X.shape[0]
